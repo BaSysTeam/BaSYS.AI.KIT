@@ -27,12 +27,17 @@ Copy-Item -Recurse -Force .\dist\.opencode C:\Path\To\Your\Project\
 
 После копирования откройте проект в выбранном AI-инструменте. Настройки, правила и skills будут находиться внутри папки проекта.
 
-Если для работы требуется доступ к BaSYS API или другим закрытым ресурсам, создайте файл с учетными данными на основе примера:
+Для подключения к BaSYS MCP-серверу создайте файл с учетными данными на основе примера:
 
 - `dist/.cursor/basys-credentials.example.json`
 - `dist/.opencode/basys-credentials.example.json`
 
 Не добавляйте реальные учетные данные в систему контроля версий.
+
+Подробнее о подключении MCP-сервера:
+
+- [Cursor](https://basysteam.github.io/BaSys.Docs/ru/integration/mcpCursor.html)
+- [OpenCode](https://basysteam.github.io/BaSys.Docs/ru/integration/mcpOpenCode.html)
 
 ## English
 
@@ -61,9 +66,14 @@ Copy-Item -Recurse -Force .\dist\.opencode C:\Path\To\Your\Project\
 
 After copying, open the project in the selected AI tool. The settings, rules, and skills will be available inside the project folder.
 
-If access to the BaSYS API or other private resources is required, create a credentials file based on the provided example:
+To connect to the BaSYS MCP server, create a credentials file based on the provided example:
 
 - `dist/.cursor/basys-credentials.example.json`
 - `dist/.opencode/basys-credentials.example.json`
 
 Do not commit real credentials to version control.
+
+More details about connecting the MCP server:
+
+- [Cursor](https://basysteam.github.io/BaSys.Docs/ru/integration/mcpCursor.html)
+- [OpenCode](https://basysteam.github.io/BaSys.Docs/ru/integration/mcpOpenCode.html)
