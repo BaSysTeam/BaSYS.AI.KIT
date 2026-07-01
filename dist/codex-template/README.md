@@ -8,24 +8,29 @@ Portable Codex setup for BaSYS metadata repositories.
 codex-template/
   README.md
   gitignore.codex-snippet
-  project-root/
-    AGENTS.md
-    .agents/
-      skills/
-      references/basys/
-    .codex/
-      config.toml
-      README.md
-      mcp/
-        basys-mcp-proxy.js
-        basys-credentials.example.json
-      rules/
-        default.rules
+  AGENTS.md
+  .agents/
+    skills/
+    references/basys/
+  .codex/
+    config.toml
+    README.md
+    mcp/
+      basys-mcp-proxy.js
+      basys-credentials.example.json
+    rules/
+      default.rules
 ```
 
 ## Install Into a Project
 
-Copy the contents of `project-root/` into the target repository root.
+Copy the Codex project files into the target repository root:
+
+```powershell
+Copy-Item -Recurse -Force .\dist\codex-template\AGENTS.md C:\Path\To\Your\Project\
+Copy-Item -Recurse -Force .\dist\codex-template\.agents C:\Path\To\Your\Project\
+Copy-Item -Recurse -Force .\dist\codex-template\.codex C:\Path\To\Your\Project\
+```
 
 Then merge `gitignore.codex-snippet` into the target repository `.gitignore`.
 Do not blindly overwrite an existing `.gitignore`.
