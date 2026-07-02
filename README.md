@@ -6,8 +6,8 @@ BaSYS.AI.KIT - готовый набор настроек, правил и skill
 
 Репозиторий содержит подготовленные конфигурации для:
 
-- Cursor: `dist/.cursor`
-- OpenCode: `dist/.opencode`
+- Cursor: `dist/cursor-template`
+- OpenCode: `dist/opencode-template`
 - Codex: `dist/codex-template`
 
 ### Использование
@@ -17,13 +17,13 @@ BaSYS.AI.KIT - готовый набор настроек, правил и skill
 Например, для Cursor:
 
 ```powershell
-Copy-Item -Recurse -Force .\dist\.cursor C:\Path\To\Your\Project\
+Copy-Item -Recurse -Force .\dist\cursor-template\.cursor C:\Path\To\Your\Project\
 ```
 
 Для OpenCode:
 
 ```powershell
-Copy-Item -Recurse -Force .\dist\.opencode C:\Path\To\Your\Project\
+Copy-Item -Recurse -Force .\dist\opencode-template\.opencode C:\Path\To\Your\Project\
 ```
 
 Для Codex:
@@ -40,8 +40,8 @@ Copy-Item -Recurse -Force .\dist\codex-template\.codex C:\Path\To\Your\Project\
 
 Для подключения к BaSYS MCP-серверу создайте файл с учетными данными на основе примера:
 
-- `dist/.cursor/basys-credentials.example.json`
-- `dist/.opencode/basys-credentials.example.json`
+- `dist/cursor-template/.cursor/basys-credentials.example.json`
+- `dist/opencode-template/.opencode/basys-credentials.example.json`
 - `dist/codex-template/.codex/mcp/basys-credentials.example.json`
 
 Не добавляйте реальные учетные данные в систему контроля версий.
@@ -58,8 +58,8 @@ BaSYS.AI.KIT is a ready-to-use toolkit of configurations, rules, and skills for 
 
 The repository contains prepared configurations for:
 
-- Cursor: `dist/.cursor`
-- OpenCode: `dist/.opencode`
+- Cursor: `dist/cursor-template`
+- OpenCode: `dist/opencode-template`
 - Codex: `dist/codex-template`
 
 ### Usage
@@ -69,13 +69,13 @@ To use the prepared settings, simply copy the required folders from `dist` into 
 For Cursor:
 
 ```powershell
-Copy-Item -Recurse -Force .\dist\.cursor C:\Path\To\Your\Project\
+Copy-Item -Recurse -Force .\dist\cursor-template\.cursor C:\Path\To\Your\Project\
 ```
 
 For OpenCode:
 
 ```powershell
-Copy-Item -Recurse -Force .\dist\.opencode C:\Path\To\Your\Project\
+Copy-Item -Recurse -Force .\dist\opencode-template\.opencode C:\Path\To\Your\Project\
 ```
 
 For Codex:
@@ -92,8 +92,8 @@ After copying, open the project in the selected AI tool. The settings, rules, an
 
 To connect to the BaSYS MCP server, create a credentials file based on the provided example:
 
-- `dist/.cursor/basys-credentials.example.json`
-- `dist/.opencode/basys-credentials.example.json`
+- `dist/cursor-template/.cursor/basys-credentials.example.json`
+- `dist/opencode-template/.opencode/basys-credentials.example.json`
 - `dist/codex-template/.codex/mcp/basys-credentials.example.json`
 
 Do not commit real credentials to version control.
