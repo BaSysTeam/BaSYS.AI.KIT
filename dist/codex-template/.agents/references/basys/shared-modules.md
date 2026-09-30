@@ -1,0 +1,202 @@
+﻿# Shared Modules
+
+Source: Converted from legacy rule `shared-modules.mdc`.
+
+Codex usage: Conventions for creating, using and refactoring into shared modules (Общие модули, `$m.<name>`) in BaSYS — named JavaScript scripts that return an export object and are callable from every platform script (column formulas, commands, workflow steps, data sources, records sources, programmable and constructor forms). Consult whenever the user asks to create / edit / rename / delete a shared module (общий модуль, модуль, `$m`), to extract duplicated logic into a reusable function, to refactor scripts, or when editing files under `modules/` or files matching `module.*.bjs` / `module.*.json`.
+
+Applies to: `**/modules/**/*`.
+
+---
+
+# Shared Modules (Общие модули)
+
+A **shared module** is a named JavaScript script whose body **returns an export object** (functions, constants). The export object is available from any platform script as `$m.<name>`. One body runs both in the browser and on the server, so a function written once works in a column formula, a command, a workflow step, a data source, a records source and a programmable form.
+
+In the constructor, modules live in the section «Общие модули» of the group «Системные». A module is **not** a metaobject kind: it has no `metaObjectKindUid`, no `header`, no forms, and is **not** a reference type — do **not** add anything to `system/dataTypes.json`.
+
+## File Layout
+
+Modules are exported into a **flat** folder `modules/` in the package root (next to `catalog/`, `workflow/`, `menu/`), without a subfolder per module. Each module is two files:
+
+- `modules/module.{name}.json` — settings;
+- `modules/module.{name}.bjs` — module body.
+
+```json
+{
+  "$schema": "../system/schemas/sharedModuleSettings.schema.json",
+  "uid": "…",
+  "name": "sales_common",
+  "title": "Общие функции продаж",
+  "memo": "Общие функции контура «Продажи»: константы, ключ позиции, загрузка прайс-листа.",
+  "version": 1,
+  "isActive": true,
+  "script": "module.sales_common.bjs"
+}
+```
+
+| Field | Rules |
+| :---- | :---- |
+| `uid` | Fresh UUID v4 for a new module. Import matches by `uid`, then by `name`; same `name` with a different `uid` in the database makes the import **fail** — never change `uid` of an existing module. |
+| `name` | `^[A-Za-z_][A-Za-z0-9_]*$`, unique case-insensitively. Project convention: English `snake_case` (e.g. `sales_common`, `prices`). No hyphens, spaces or leading digits. |
+| `title` | Required, non-empty (Russian). |
+| `memo` | Short Russian description of what the module provides (optional for the platform, required by project conventions). |
+| `version` | `1` for a new module; read-only, the server increments it on every save. |
+| `isActive` | `true` by default. `false` keeps the module in the list but any `$m.<name>` access fails with `is inactive`. |
+| `script` | **Bare filename** of the sidecar `.bjs` (no path, no `@file:`), must start with `module.` and end with `.bjs`. |
+
+If `system/schemas/sharedModuleSettings.schema.json` is not yet present locally, it will appear after the next system sync — do not create it yourself (`system/` is read-only).
+
+## Body Contract
+
+- The body runs as a function body: `return` of an **object** is mandatory. What is returned is the public API; everything else stays private. Returning a non-object (number, string, `undefined`) is an initialization error.
+- The **top level is synchronous**: `await` is allowed only inside functions; the module's functions themselves may be `async`.
+- Not an ES module: no `import`, `export`, npm packages, TypeScript.
+- Inside the body BaSYS.FX functions and other modules via `$m` are available.
+- The export object must use commas, not semicolons: `return { testFn, other };`.
+
+## Comments
+
+**Language.** The comment language is not fixed — it follows the solution's convention (see "Communication and Comments" in `general-conventions`): the language of existing comments in the module; for a new module — the language of existing modules and neighbouring scripts of the same contour; if there is nothing to go by or the languages are mixed — ask the user. Use one language within a module. The example below uses Russian comments.
+
+**Detail.** A module is called from many places by people who do not read its body, so every **exported** function and constant must have a **detailed** comment block right above it (JSDoc-style `/** … */`). The block must cover:
+
+- **purpose** — what the function does and in which business scenario it is used;
+- **parameters** — each parameter: type, meaning, allowed values, whether it may be empty; for row / header objects — which fields are read;
+- **return value** — type and meaning, including what is returned for empty / unknown input;
+- **environment** — synchronous and works everywhere, or `async` using `from()` and to be awaited only from Node or the browser; mention if the function must not be used in records-writing formulas (Jint);
+- **call example** — one line with `$m.<name>.<fn>(...)`.
+
+Private helpers get at least a one-line comment explaining their purpose. A module-level comment at the top of the body describes the module's contour and contents.
+
+**Forbidden words in comments.** Comments are checked for forbidden identifiers too (see below). This matters most for English comments: rephrase around standalone `document`, `location`, `window`, `navigator`, `prompt`, `confirm`, `alert` (e.g. "the operation" instead of "document", "the page" instead of "window"; member access like `row.location` is fine).
+
+```js
+// Общий модуль prices: расчёт сумм с НДС для документов продаж и закупок.
+
+/** Ставка НДС по умолчанию, доля от суммы без НДС. */
+const VAT_RATE = 0.2;
+
+/**
+ * Рассчитывает сумму с НДС по сумме без НДС.
+ * Используется в формулах колонок «Сумма с НДС» и в источниках данных отчётов.
+ *
+ * @param {number} amount Сумма без НДС. Пустое значение считается нулём.
+ * @param {number} [rate] Ставка НДС, доля (0.2 = 20 %). Если не передана — VAT_RATE.
+ * @returns {number} Сумма с НДС, без округления.
+ *
+ * Среда: синхронная, без обращения к БД — работает в любой среде, включая формулы при записи движений.
+ * Пример: $m.prices.withVat($h.amount)
+ */
+function withVat(amount, rate) {
+  const vatRate = isEmpty(rate) ? VAT_RATE : rate;
+  return (amount || 0) * (1 + vatRate);
+}
+
+return { VAT_RATE, withVat };
+```
+
+## Save-time Validation
+
+The server rejects the module on the first failing check (English messages):
+
+1. `name` does not match `^[A-Za-z_][A-Za-z0-9_]*$`.
+2. `name` duplicates an existing module case-insensitively.
+3. `title` is empty.
+4. No standalone word `return` (`returned = 1` does not count).
+5. Forbidden standalone identifiers: `alert`, `confirm`, `prompt`, `window`, `document`, `localStorage`, `sessionStorage`, `navigator`, `location`. **Strings and comments are not excluded** — the word `document` or `location` in a comment also blocks saving. Member access (`row.location`, `$h.window`) and longer words (`locationX`, `documents`) pass. This mostly bites English comments and string literals — rephrase them.
+6. Syntax is compiled by V8 without execution; V8 error text is returned as is.
+
+## What a Module Sees
+
+The body sees the functions of the environment it was called from, but **never the caller's context**: `$h`, `$t`, `$r`, `_parameters`, `_data`, `_filters`, `item`, `context` and a form's `this` are always `undefined` inside a module. **Pass context as arguments.**
+
+```js
+// Хорошо: строка передаётся параметром.
+function positionKey(row) { /* ... */ }
+// Вызов: $m.sales_common.positionKey($r)
+```
+
+| Environment | BaSYS.FX | `from()` | `$m` |
+| :---------- | :------- | :------- | :--- |
+| Workflow step without `await` (ClearScript) | yes | **no** | yes |
+| Workflow step with `await` (Node) | yes | yes | yes |
+| Data source of data view / Excel report / print form without `await` (ClearScript) | yes | **no** | yes |
+| Data source with `await` (Node) | yes | yes | yes |
+| Records source (ClearScript) | yes | **no** | yes |
+| Column formula while writing records (Jint) | **partial** | **no** | yes |
+| Formulas, `itemsSource`, commands, constructor console (browser) | yes | yes | yes |
+| Programmable form (browser; `$m` in `data()`, `computed`, `methods`) | yes | yes | yes |
+
+Consequences:
+
+- **A function that uses `from()` must be `async`** and must be called with `await` — from a workflow step (the `await` switches the step to Node), from a data source with `await`, or from the browser. Called synchronously it returns a `Promise` instead of a value. Never call such functions from records sources or from formulas evaluated while writing records.
+- **Formulas evaluated while writing records (Jint)** have only `isEmpty`, `isNotEmpty`, `iif`, `ifs`, `dateTimeNow`, `dateDifference` and date extensions. Functions that use `createTable`, `format*` or `from` must not be called from there. Keep functions intended for such formulas pure and minimal.
+- Keep **pure helpers** (no DB access, context via arguments) synchronous — they then work in every environment. Split DB-loading helpers into separate `async` functions.
+
+## Calling `$m`
+
+- Access is synchronous; the first access executes the body, later ones return the cached export object.
+- Always reference modules **statically** — `$m.sales_common.fn(...)` or `const { fn } = $m.sales_common;`. Dynamic access `$m[name]` works but is invisible to «Где используется» and to rename / delete checks.
+- Use the exact case of the name: `$m.sales_common`, not `$m.RD_Common`.
+
+```js
+// Формула колонки
+return $m.prices.withVat($h.amount)
+```
+
+```js
+// Шаг процесса: await переводит шаг в Node, где внутри модуля работает from()
+const priceList = await $m.sales_common.loadPriceList(_parameters.price_list);
+return $m.sales_common.priceRowFields(priceList.currency, priceList.unit)
+```
+
+## Caching, State, Dependencies
+
+- Cache lifetime: on the server — one evaluation (each workflow step and each data source builds its own engine, so the body runs again there); in the browser — until page reload. **Do not keep state** (counters, caches) in a module — it will not survive.
+- After importing a changed module, the server picks up the new body by itself, but the browser loads module bodies once at SPA start — tell the user to **reload the page (F5)** to test client-side formulas, commands and forms.
+- Circular dependency **at initialization** (`a`'s body reads `$m.b` at the top level and `b`'s reads `$m.a`) is an error. Mutual calls between *functions* are fine — to be safe, read `$m.other` inside functions, not at the top level of the body.
+
+## Runtime Errors
+
+Messages start with `module '<name>'` — search the log by module name:
+
+| Message | Cause |
+| :------ | :---- |
+| `module 'x' not found` | No such module in the database (or the page was not reloaded after it was created). |
+| `module 'x' is inactive` | Module exists but `isActive = false`. |
+| `module 'x': body must return an object` | Body returned a non-object or nothing. |
+| `module 'x': <text>` | Exception while executing the body. |
+| `module 'a': circular dependency a -> b -> a` | Modules reference each other at initialization. |
+
+Import does not fail on a script referencing a missing `$m.<name>` — it only emits a warning in the import summary. So when a change adds new `$m` calls, the module must be imported **together with** (or before) the scripts that use it.
+
+## Using Shared Modules When Refactoring
+
+When the user asks to refactor scripts (commands, workflow steps, column formulas, `itemsSource`, data sources, records sources, create-from scripts, programmable / constructor forms) — or when a task makes you write logic that already exists elsewhere — **prefer extracting reusable logic into a shared module**. The full step-by-step procedure (scope, search commands, report template, confirmation before edits, verification) is the **`refactor-to-shared-modules`** skill (`.agents/skills/refactor-to-shared-modules/SKILL.md`) — follow it for any refactoring request. Short version:
+
+0. **Check for BaSYS.FX duplicates first.** Hand-written code that re-implements a library function (emptiness checks, number / date formatting, date arithmetic, `rows.reduce` / `filter` / `sort` / grouping over a `DataTable`, etc.) is replaced **in place** with the BaSYS.FX call — not moved into a module. Verify that the behaviour matches on real values (`isEmpty(0) === true`, `parseNumber` returns `0` instead of `NaN`, `toArray` is distinct by default) and that the function exists in the caller's environment. Module functions that merely wrap a BaSYS.FX call are removed. Pattern reference: `.agents/skills/refactor-to-shared-modules/fx-equivalents.md`; source: [BaSYS.FX index](https://basysteam.github.io/BaSys.Docs/ru/calculations/methodsIndex.html).
+1. **Look for existing modules first.** Check `modules/` and grep the metadata for `$m.` before writing a new helper; extend an existing module of the same contour instead of creating a near-duplicate.
+2. **Extract duplicates.** Candidates are logic repeated in two or more places: identical helper functions copied between `.bjs` files / forms, repeated hard-coded UIDs and constants (object UIDs, enum names, magic numbers), shared key-building / parsing / mapping code, identical queries.
+3. **Make it context-free.** Replace `$h` / `$t` / `$r` / `_parameters` / `_data` / `this` reads with function parameters; the caller passes them in.
+4. **Respect the environment table.** Keep pure helpers synchronous; make `from()`-based helpers `async` and add `await` at every call site. Before moving a function, check every current caller's environment — a helper used from a records source or a records-writing formula must not rely on `from()` / `createTable` / `format*`.
+5. **Group by contour**, one module per functional area (e.g. `sales_common` for «Продажи»), not one module per function and not one giant module for everything.
+6. **Replace all call sites** with static `$m.<name>.<fn>(...)` references and delete the copied code; behaviour must stay identical.
+7. **Do not extract** logic used in exactly one place, one-liners already covered by BaSYS.FX (the module does not replace the library), or code tightly bound to a specific form's reactive state.
+
+## Renaming and Deleting
+
+- Renaming a module does **not** rewrite references. When renaming, grep the whole metadata for `$m.<oldName>` (including destructuring `= $m.<oldName>`) and update every occurrence, then rename both files and the `name` / `script` fields. Keep the `uid`.
+- Before deleting a module or removing an exported member, grep for `$m.<name>` / `$m.<name>.<member>` and make sure nothing uses it. To disable a module temporarily, set `isActive = false` instead of deleting.
+
+## Checklist
+
+1. Name is English `snake_case`, matches `^[A-Za-z_][A-Za-z0-9_]*$`, not taken by another module.
+2. `modules/module.{name}.json` has `$schema`, fresh `uid`, `title`, Russian `memo`, `version = 1`, `isActive`, `script = "module.{name}.bjs"`.
+3. Body ends with `return { … }` of an object, no top-level `await`, no `import` / `export`.
+4. No forbidden identifiers anywhere in the body, including comments and strings.
+5. Every exported function and constant has a detailed comment block (purpose, parameters, return value, environment, call example); the module has a header comment; comments use one language, chosen by the solution's convention or confirmed with the user.
+6. No reads of caller context; everything comes through arguments.
+7. `from()`-based functions are `async`, all their callers use `await` and run in Node or the browser.
+8. All call sites use static `$m.<name>.<fn>` references.
+9. The user is reminded to import the module together with the scripts that use it and to reload the page (F5).
+

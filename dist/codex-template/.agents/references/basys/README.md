@@ -18,4 +18,5 @@ Use `AGENTS.md` as the entry point. It maps common task types to these files.
 - `data-view-reports.md` - data views, reports, dashboards, charts.
 - `excel-reports.md` - Excel reports with `.xlsx` templates.
 - `print-forms.md` - print forms owned by a metaobject.
+- `shared-modules.md` - shared modules (`$m.<name>`) and refactoring into them.
 

@@ -49,6 +49,8 @@ before editing that area:
 - `data-view-reports.md` for `data_view/`.
 - `excel-reports.md` for `excel_report/`.
 - `print-forms.md` for `*.print_form.*`.
+- `shared-modules.md` for `modules/`, `$m.<name>` calls, and refactoring
+  duplicated script logic.
 
 ## Skills
 
@@ -64,6 +66,7 @@ creation workflows, especially:
 - `create-edit-form`
 - `create-fill-workflow`
 - `excel-import-to-detail`
+- `refactor-to-shared-modules`
 
 When a task matches one of these workflows, load the skill first and follow its
 checklist. If a skill and a reference document both apply, use the skill for the
