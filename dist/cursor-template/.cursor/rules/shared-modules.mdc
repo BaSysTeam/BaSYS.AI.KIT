@@ -12,14 +12,14 @@ In the constructor, modules live in the section «Общие модули» of t
 
 ## File Layout
 
-Modules are exported into a **flat** folder `modules/` in the package root (next to `catalog/`, `workflow/`, `menu/`), without a subfolder per module. Each module is two files:
+Modules are exported each into its own folder `modules/{name}/` in the package root (next to `catalog/`, `workflow/`, `menu/`). Each module is two files inside that folder:
 
-- `modules/module.{name}.json` — settings;
-- `modules/module.{name}.bjs` — module body.
+- `modules/{name}/module.{name}.json` — settings;
+- `modules/{name}/module.{name}.bjs` — module body.
 
 ```json
 {
-  "$schema": "../system/schemas/sharedModuleSettings.schema.json",
+  "$schema": "../../system/schemas/sharedModuleSettings.schema.json",
   "uid": "…",
   "name": "sales_common",
   "title": "Общие функции продаж",
@@ -181,13 +181,13 @@ When the user asks to refactor scripts (commands, workflow steps, column formula
 
 ## Renaming and Deleting
 
-- Renaming a module does **not** rewrite references. When renaming, grep the whole metadata for `$m.<oldName>` (including destructuring `= $m.<oldName>`) and update every occurrence, then rename both files and the `name` / `script` fields. Keep the `uid`.
+- Renaming a module does **not** rewrite references. When renaming, grep the whole metadata for `$m.<oldName>` (including destructuring `= $m.<oldName>`) and update every occurrence, then rename the folder `modules/{name}/`, both files inside it, and the `name` / `script` fields. Keep the `uid`.
 - Before deleting a module or removing an exported member, grep for `$m.<name>` / `$m.<name>.<member>` and make sure nothing uses it. To disable a module temporarily, set `isActive = false` instead of deleting.
 
 ## Checklist
 
 1. Name is English `snake_case`, matches `^[A-Za-z_][A-Za-z0-9_]*$`, not taken by another module.
-2. `modules/module.{name}.json` has `$schema`, fresh `uid`, `title`, Russian `memo`, `version = 1`, `isActive`, `script = "module.{name}.bjs"`.
+2. `modules/{name}/module.{name}.json` has `$schema` (`../../system/schemas/sharedModuleSettings.schema.json`), fresh `uid`, `title`, Russian `memo`, `version = 1`, `isActive`, `script = "module.{name}.bjs"`.
 3. Body ends with `return { … }` of an object, no top-level `await`, no `import` / `export`.
 4. No forbidden identifiers anywhere in the body, including comments and strings.
 5. Every exported function and constant has a detailed comment block (purpose, parameters, return value, environment, call example); the module has a header comment; comments use one language, chosen by the solution's convention or confirmed with the user.

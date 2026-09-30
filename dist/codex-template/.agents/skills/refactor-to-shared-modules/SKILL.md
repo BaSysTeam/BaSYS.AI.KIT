@@ -68,13 +68,13 @@ git status --porcelain
 | Источники данных | `*.data_source.*.bjs` (data_view, excel_report, print_form) |
 | Формы | `*.form.*.vue`, `*.form.*.json` (выражения в `properties`), `*.on_initialized.bjs` |
 | Колонки | `formula`, `itemsSource` в JSON метаобъектов |
-| Модули | `modules/module.*.bjs` |
+| Модули | `modules/{name}/module.{name}.bjs` |
 
 `system/` и `manifest.json` не сканировать и не трогать.
 
 ## Шаг 2. Существующие модули
 
-1. Прочитать все `modules/module.*.json` и `.bjs`. Для каждого модуля выписать: `name`, `isActive`, экспорт (ключи `return { … }`), какие функции `async`.
+1. Прочитать все `modules/*/module.*.json` и `.bjs`. Для каждого модуля выписать: `name`, `isActive`, экспорт (ключи `return { … }`), какие функции `async`.
 2. Найти текущие обращения:
 
 ```bash
@@ -178,8 +178,8 @@ rg -n '\$m\.' .
 ## Шаг 9. Правки
 
 1. **Замены на BaSYS.FX** — прямо в местах вызова.
-2. **Модуль.** Создать или расширить `modules/module.{name}.json` и `modules/module.{name}.bjs` по правилу [shared-modules](../../references/basys/shared-modules.md):
-   - новый модуль: свежий `uid`, `version = 1`, `isActive = true`, русские `title` и `memo`, `"script": "module.{name}.bjs"`, `$schema` = `../system/schemas/sharedModuleSettings.schema.json`;
+2. **Модуль.** Создать или расширить `modules/{name}/module.{name}.json` и `modules/{name}/module.{name}.bjs` по правилу [shared-modules](../../references/basys/shared-modules.md):
+   - новый модуль: свежий `uid`, `version = 1`, `isActive = true`, русские `title` и `memo`, `"script": "module.{name}.bjs"`, `$schema` = `../../system/schemas/sharedModuleSettings.schema.json`;
    - существующий модуль: `uid` и `version` не трогать, при необходимости обновить `memo`;
    - тело заканчивается `return { … }` (через запятые);
    - **язык комментариев** — по соглашению решения (раздел «Communication and Comments» в `general-conventions`): как в существующих модулях и скриптах того же контура; если ориентира нет или языки смешаны — спросить пользователя (можно заодно с подтверждением плана в шаге 8). Внутри модуля — один язык;
